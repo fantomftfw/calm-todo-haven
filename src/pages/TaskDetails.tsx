@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Clock, Calendar, Play, Trash2, Edit, CheckCircle, Circle, Brain } from 'lucide-react';
 import { useTasks } from '../utils/api';
 import { toast } from '@/hooks/use-toast';
+import EditTaskModal from '../components/EditTaskModal';
 
 interface Task {
   id: string;
@@ -22,6 +22,7 @@ const TaskDetails = () => {
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
   const [breakdownLoading, setBreakdownLoading] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const { getTask, toggleTask, deleteTask, breakdownTask } = useTasks();
 
   useEffect(() => {
@@ -36,6 +37,7 @@ const TaskDetails = () => {
     try {
       const taskData = await getTask(id);
       setTask(taskData);
+      console.log('Loaded task:', taskData);
     } catch (error) {
       console.error('Failed to load task:', error);
       toast({
@@ -95,7 +97,13 @@ const TaskDetails = () => {
     setBreakdownLoading(true);
     try {
       const result = await breakdownTask(task.id);
-      setTask(prev => prev ? { ...prev, subtasks: result.subtasks } : null);
+      console.log('Breakdown result:', result);
+      // The API returns the updated task data with subtasks
+      setTask(prev => prev ? { 
+        ...prev, 
+        subtasks: result.subtasks || result.subTasks || [],
+        totalEstimatedTime: result.totalEstimatedTime || prev.totalEstimatedTime 
+      } : null);
       toast({
         title: "Success",
         description: "Task broken down successfully",
@@ -110,6 +118,18 @@ const TaskDetails = () => {
     } finally {
       setBreakdownLoading(false);
     }
+  };
+
+  const calculateTotalEstimatedTime = () => {
+    if (!task?.subtasks || task.subtasks.length === 0) {
+      return task?.totalEstimatedTime || 0;
+    }
+    
+    const subtaskTotal = task.subtasks.reduce((total, subtask) => {
+      return total + (subtask.estimatedTime || 0);
+    }, 0);
+    
+    return subtaskTotal || task?.totalEstimatedTime || 0;
   };
 
   const formatTime = (timeString: string) => {
@@ -154,6 +174,8 @@ const TaskDetails = () => {
       </div>
     );
   }
+
+  const totalEstimatedTime = calculateTotalEstimatedTime();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
@@ -220,10 +242,10 @@ const TaskDetails = () => {
                   </div>
                 )}
 
-                {task.totalEstimatedTime && (
+                {totalEstimatedTime > 0 && (
                   <div className="flex items-center text-gray-500">
                     <Clock size={16} className="mr-2" />
-                    <span>Estimated: {task.totalEstimatedTime} minutes</span>
+                    <span>Total estimated: {totalEstimatedTime} minutes</span>
                   </div>
                 )}
               </div>
@@ -232,7 +254,7 @@ const TaskDetails = () => {
 
           {/* Action Buttons */}
           <div className="flex space-x-3">
-            {task.totalEstimatedTime && (
+            {totalEstimatedTime > 0 && (
               <Link
                 to={`/focus?task=${task.id}`}
                 className="flex-1 py-3 px-4 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-colors flex items-center justify-center"
@@ -241,7 +263,10 @@ const TaskDetails = () => {
                 Focus
               </Link>
             )}
-            <button className="flex-1 py-3 px-4 border border-gray-200 text-gray-600 rounded-2xl hover:bg-gray-50 transition-colors flex items-center justify-center">
+            <button 
+              onClick={() => setShowEditModal(true)}
+              className="flex-1 py-3 px-4 border border-gray-200 text-gray-600 rounded-2xl hover:bg-gray-50 transition-colors flex items-center justify-center"
+            >
               <Edit size={16} className="mr-2" />
               Edit
             </button>
@@ -290,6 +315,14 @@ const TaskDetails = () => {
           )}
         </div>
       </div>
+
+      {/* Edit Task Modal */}
+      <EditTaskModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        task={task}
+        onTaskUpdated={loadTask}
+      />
     </div>
   );
 };
