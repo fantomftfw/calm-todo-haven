@@ -19,6 +19,7 @@ const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
   const [transcript, setTranscript] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const finalTranscriptRef = useRef('');
   const { createTask } = useTasks();
 
   useEffect(() => {
@@ -26,6 +27,7 @@ const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
       setTranscript('');
       setIsListening(false);
       setIsProcessing(false);
+      finalTranscriptRef.current = '';
     }
   }, [isOpen]);
 
@@ -40,22 +42,24 @@ const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
 
       recognition.onstart = () => {
         setIsListening(true);
+        finalTranscriptRef.current = '';
+        setTranscript('');
       };
 
       recognition.onresult = (event) => {
-        let finalTranscript = '';
         let interimTranscript = '';
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const transcriptPart = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
-            finalTranscript += transcriptPart;
+            finalTranscriptRef.current += transcriptPart + ' ';
           } else {
             interimTranscript += transcriptPart;
           }
         }
 
-        setTranscript(prev => prev + finalTranscript + interimTranscript);
+        // Display final + interim results
+        setTranscript(finalTranscriptRef.current + interimTranscript);
       };
 
       recognition.onerror = (event) => {
@@ -91,7 +95,8 @@ const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
   };
 
   const extractTasksFromTranscript = async () => {
-    if (!transcript.trim()) {
+    const finalText = finalTranscriptRef.current.trim();
+    if (!finalText) {
       toast({
         title: "No Speech",
         description: "Please speak something first.",
@@ -102,7 +107,7 @@ const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
 
     setIsProcessing(true);
     try {
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyB2TUPrXR8qQNcLselSNq8twBklnCU40a4', {
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=AIzaSyB2TUPrXR8qQNcLselSNq8twBklnCU40a4', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -120,7 +125,7 @@ const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
               - If no clear tasks, return empty array []
               - Do not include any other text or explanation
               
-              Text: "${transcript}"`
+              Text: "${finalText}"`
             }]
           }]
         })
@@ -237,7 +242,7 @@ const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
 
           <button
             onClick={extractTasksFromTranscript}
-            disabled={!transcript.trim() || isProcessing}
+            disabled={!finalTranscriptRef.current.trim() || isProcessing}
             className="flex-1 py-3 px-4 bg-purple-600 text-white rounded-2xl hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
           >
             <Brain size={16} className="mr-2" />
