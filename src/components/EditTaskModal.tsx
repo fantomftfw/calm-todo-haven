@@ -51,13 +51,20 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, task, on
 
     setLoading(true);
     try {
-      await updateTask(task.id, {
+      // Format the data to match API expectations
+      const updateData = {
         title: formData.title.trim(),
         description: formData.description.trim() || null,
         date: formData.date || null,
         time: formData.time || null,
-        totalEstimatedTime: formData.totalEstimatedTime || null,
-      });
+        hasDate: Boolean(formData.date),
+        hasTime: Boolean(formData.time),
+        totalEstimatedTime: formData.totalEstimatedTime || 0,
+      };
+
+      console.log('Sending update data:', updateData);
+      
+      await updateTask(task.id, updateData);
 
       toast({
         title: "Success",
