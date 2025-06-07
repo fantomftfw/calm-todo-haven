@@ -12,6 +12,7 @@ interface Task {
   time?: string;
   isDone: boolean;
   totalEstimatedTime?: number;
+  subTasks?: any[];
 }
 
 interface EditTaskModalProps {

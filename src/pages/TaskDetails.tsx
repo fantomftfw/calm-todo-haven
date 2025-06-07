@@ -13,7 +13,7 @@ interface Task {
   time?: string;
   isDone: boolean;
   totalEstimatedTime?: number;
-  subtasks?: any[];
+  subTasks?: any[];
 }
 
 const TaskDetails = () => {
@@ -98,10 +98,10 @@ const TaskDetails = () => {
     try {
       const result = await breakdownTask(task.id);
       console.log('Breakdown result:', result);
-      // The API returns the updated task data with subtasks
+      // The API returns the updated task data with subTasks
       setTask(prev => prev ? { 
         ...prev, 
-        subtasks: result.subtasks || result.subTasks || [],
+        subTasks: result.subTasks || result.subtasks || [],
         totalEstimatedTime: result.totalEstimatedTime || prev.totalEstimatedTime 
       } : null);
       toast({
@@ -121,11 +121,11 @@ const TaskDetails = () => {
   };
 
   const calculateTotalEstimatedTime = () => {
-    if (!task?.subtasks || task.subtasks.length === 0) {
+    if (!task?.subTasks || task.subTasks.length === 0) {
       return task?.totalEstimatedTime || 0;
     }
     
-    const subtaskTotal = task.subtasks.reduce((total, subtask) => {
+    const subtaskTotal = task.subTasks.reduce((total, subtask) => {
       return total + (subtask.estimatedTime || 0);
     }, 0);
     
@@ -277,7 +277,7 @@ const TaskDetails = () => {
         <div className="bg-white rounded-3xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800">Subtasks</h3>
-            {!task.subtasks || task.subtasks.length === 0 ? (
+            {!task.subTasks || task.subTasks.length === 0 ? (
               <button
                 onClick={handleBreakdown}
                 disabled={breakdownLoading}
@@ -289,9 +289,9 @@ const TaskDetails = () => {
             ) : null}
           </div>
 
-          {task.subtasks && task.subtasks.length > 0 ? (
+          {task.subTasks && task.subTasks.length > 0 ? (
             <div className="space-y-3">
-              {task.subtasks.map((subtask, index) => (
+              {task.subTasks.map((subtask, index) => (
                 <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-2xl">
                   <Circle size={16} className="text-gray-400 mt-1" />
                   <div className="flex-1">

@@ -16,7 +16,7 @@ interface Task {
   time?: string;
   isDone: boolean;
   totalEstimatedTime?: number;
-  subtasks?: any[];
+  subTasks?: any[];
 }
 
 const Home = () => {
@@ -33,7 +33,7 @@ const Home = () => {
   const loadTasks = async () => {
     try {
       const data = await getTasks();
-      // API returns tasks directly as an array, not nested under 'tasks' property
+      // API returns tasks directly as an array
       setTasks(data || []);
       console.log('Loaded tasks:', data);
     } catch (error) {
