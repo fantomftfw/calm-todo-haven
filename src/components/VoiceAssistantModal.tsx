@@ -116,12 +116,18 @@ const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
           contents: [{
             parts: [{
               text: `Extract actionable tasks from the following text. Return ONLY a JSON array of tasks in this exact format:
-              [{"title": "task title", "description": "brief description", "estimatedTime": number_in_minutes}]
+              [{"title": "task title", "description": "brief description", "estimatedTime": number_in_minutes, "date": "YYYY-MM-DD or null", "time": "HH:MM or null"}]
               
               Rules:
               - Each task should be a clear, actionable item
               - Keep titles concise but descriptive
               - Estimate time in minutes (5-180 range)
+              - Extract date and time if mentioned (today, tomorrow, specific dates/times)
+              - Use YYYY-MM-DD format for dates and HH:MM (24-hour) format for times
+              - If "today" is mentioned, use today's date: ${new Date().toISOString().split('T')[0]}
+              - If "tomorrow" is mentioned, use tomorrow's date: ${new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+              - Convert times like "9pm" to "21:00", "9am" to "09:00", etc.
+              - If no date/time mentioned, set as null
               - If no clear tasks, return empty array []
               - Do not include any other text or explanation
               
@@ -166,6 +172,8 @@ const VoiceAssistantModal: React.FC<VoiceAssistantModalProps> = ({
           title: task.title,
           description: task.description || undefined,
           totalEstimatedTime: task.estimatedTime || undefined,
+          date: task.date || undefined,
+          time: task.time || undefined,
         };
         await createTask(taskData);
       }

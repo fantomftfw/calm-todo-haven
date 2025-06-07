@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Clock, Calendar, CheckCircle, Circle, Mic } from 'lucide-react';
@@ -20,6 +21,8 @@ interface Task {
   isDone: boolean;
   totalEstimatedTime?: number;
   subTasks?: any[];
+  createdAt?: string;
+  order?: number;
 }
 
 const Home = () => {
@@ -39,9 +42,37 @@ const Home = () => {
   const loadTasks = async () => {
     try {
       const data = await getTasks();
-      // API returns tasks directly as an array
-      setTasks(data || []);
-      console.log('Loaded tasks:', data);
+      // Sort tasks by creation order and schedule
+      const sortedTasks = (data || []).sort((a: Task, b: Task) => {
+        // First, separate scheduled vs unscheduled tasks
+        const aHasSchedule = !!(a.date || a.time);
+        const bHasSchedule = !!(b.date || b.time);
+        
+        if (aHasSchedule && !bHasSchedule) return -1; // Scheduled tasks first
+        if (!aHasSchedule && bHasSchedule) return 1;
+        
+        // Within the same category, sort by order or creation time
+        if (a.order !== undefined && b.order !== undefined) {
+          return a.order - b.order;
+        }
+        
+        // Fallback to creation time (newest first for unscheduled)
+        if (!aHasSchedule && !bHasSchedule) {
+          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+        }
+        
+        // For scheduled tasks, sort by date/time
+        if (aHasSchedule && bHasSchedule) {
+          const aDateTime = new Date(`${a.date || '1970-01-01'} ${a.time || '00:00'}`);
+          const bDateTime = new Date(`${b.date || '1970-01-01'} ${b.time || '00:00'}`);
+          return aDateTime.getTime() - bDateTime.getTime();
+        }
+        
+        return 0;
+      });
+      
+      setTasks(sortedTasks);
+      console.log('Loaded tasks:', sortedTasks);
     } catch (error) {
       console.error('Failed to load tasks:', error);
       toast({
@@ -128,7 +159,14 @@ const Home = () => {
   const filteredTasks = getFilteredTasks();
   const todoTasks = filteredTasks.filter(task => !task.isDone);
   const doneTasks = filteredTasks.filter(task => task.isDone);
-  const scheduledTasks = todoTasks.filter(task => task.date || task.time);
+  
+  // Sort scheduled tasks by time
+  const scheduledTasks = todoTasks.filter(task => task.date || task.time).sort((a, b) => {
+    const aDateTime = new Date(`${a.date || '1970-01-01'} ${a.time || '00:00'}`);
+    const bDateTime = new Date(`${b.date || '1970-01-01'} ${b.time || '00:00'}`);
+    return aDateTime.getTime() - bDateTime.getTime();
+  });
+  
   const allDayTasks = todoTasks.filter(task => !task.date && !task.time);
 
   if (loading) {
