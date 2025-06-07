@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useTasks } from '../utils/api';
 import { toast } from '@/hooks/use-toast';
@@ -18,6 +18,15 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onTaskAdde
   const [estimatedTime, setEstimatedTime] = useState('');
   const [loading, setLoading] = useState(false);
   const { createTask } = useTasks();
+
+  // Set current date when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const today = new Date();
+      const todayString = today.toISOString().split('T')[0];
+      setDate(todayString);
+    }
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +70,23 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onTaskAdde
     }
   };
 
+  const handleDateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    if (value === 'any-day') {
+      setDate('');
+    } else if (value === 'today') {
+      const today = new Date();
+      const todayString = today.toISOString().split('T')[0];
+      setDate(todayString);
+    } else {
+      setDate(value);
+    }
+  };
+
   if (!isOpen) return null;
+
+  const today = new Date();
+  const todayString = today.toISOString().split('T')[0];
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
@@ -111,12 +136,24 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onTaskAdde
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Date
               </label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
+              <select
+                value={date === todayString ? 'today' : date === '' ? 'any-day' : 'custom'}
+                onChange={handleDateChange}
                 className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              />
+              >
+                <option value="today">Today</option>
+                <option value="any-day">Any day</option>
+                <option value="custom">Custom date</option>
+              </select>
+              
+              {date !== '' && date !== todayString && (
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all mt-2"
+                />
+              )}
             </div>
 
             <div>
