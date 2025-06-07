@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Clock, Calendar, CheckCircle, Circle, Mic } from 'lucide-react';
+import { Plus, Clock, Calendar, CheckCircle, Circle, Mic, Inbox } from 'lucide-react';
 import { useTasks } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -32,6 +32,7 @@ const Home = () => {
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showWeekView, setShowWeekView] = useState(false);
+  const [currentView, setCurrentView] = useState<'calendar' | 'inbox'>('calendar');
   const { user } = useAuth();
   const { getTasks, toggleTask, reorderTasks } = useTasks();
 
@@ -131,6 +132,7 @@ const Home = () => {
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
     setShowWeekView(false);
+    setCurrentView('calendar');
   };
 
   const handleWeekChange = (direction: 'prev' | 'next') => {
@@ -150,10 +152,13 @@ const Home = () => {
   };
 
   const getFilteredTasks = () => {
-    return tasks.filter(task => {
-      // Show tasks without dates (all-day tasks) or tasks for the selected date
-      return !task.date || isSelectedDate(task.date);
-    });
+    if (currentView === 'inbox') {
+      // Show only tasks without dates
+      return tasks.filter(task => !task.date);
+    } else {
+      // Show only tasks for the selected date
+      return tasks.filter(task => task.date && isSelectedDate(task.date));
+    }
   };
 
   const filteredTasks = getFilteredTasks();
@@ -190,20 +195,62 @@ const Home = () => {
         <p className="text-gray-600">Let's make today productive</p>
       </div>
 
-      {/* Date Header */}
-      <DateHeader 
-        selectedDate={selectedDate}
-        isExpanded={showWeekView}
-        onToggle={() => setShowWeekView(!showWeekView)}
-      />
+      {/* View Toggle */}
+      <div className="flex space-x-2 mb-4">
+        <button
+          onClick={() => setCurrentView('calendar')}
+          className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
+            currentView === 'calendar'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          <Calendar className="mr-2" size={16} />
+          Calendar
+        </button>
+        <button
+          onClick={() => setCurrentView('inbox')}
+          className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
+            currentView === 'inbox'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          <Inbox className="mr-2" size={16} />
+          Inbox ({tasks.filter(task => !task.date).length})
+        </button>
+      </div>
 
-      {/* Week View */}
-      {showWeekView && (
-        <WeekView
-          selectedDate={selectedDate}
-          onDateSelect={handleDateSelect}
-          onWeekChange={handleWeekChange}
-        />
+      {/* Calendar View */}
+      {currentView === 'calendar' && (
+        <>
+          {/* Date Header */}
+          <DateHeader 
+            selectedDate={selectedDate}
+            isExpanded={showWeekView}
+            onToggle={() => setShowWeekView(!showWeekView)}
+          />
+
+          {/* Week View */}
+          {showWeekView && (
+            <WeekView
+              selectedDate={selectedDate}
+              onDateSelect={handleDateSelect}
+              onWeekChange={handleWeekChange}
+            />
+          )}
+        </>
+      )}
+
+      {/* Inbox View Header */}
+      {currentView === 'inbox' && (
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+            <Inbox className="mr-2 text-blue-500" size={20} />
+            Inbox
+          </h2>
+          <p className="text-gray-600 text-sm mt-1">Tasks without scheduled dates</p>
+        </div>
       )}
 
       {/* To Do Section */}
@@ -213,8 +260,8 @@ const Home = () => {
           To Do ({todoTasks.length})
         </h2>
 
-        {/* Scheduled Tasks */}
-        {scheduledTasks.map(task => (
+        {/* Scheduled Tasks (only in calendar view) */}
+        {currentView === 'calendar' && scheduledTasks.map(task => (
           <TaskCard 
             key={task.id} 
             task={task} 
@@ -222,39 +269,46 @@ const Home = () => {
           />
         ))}
 
-        {/* All-Day Tasks (Draggable) */}
-        <DragDropContext onDragEnd={onDragEnd}>
-          <Droppable droppableId="all-day-tasks">
-            {(provided) => (
-              <div {...provided.droppableProps} ref={provided.innerRef}>
-                {allDayTasks.map((task, index) => (
-                  <Draggable key={task.id} draggableId={task.id} index={index}>
-                    {(provided, snapshot) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
-                        className={`${snapshot.isDragging ? 'opacity-75' : ''}`}
-                      >
-                        <TaskCard 
-                          task={task} 
-                          onToggle={handleToggleTask}
-                          isDraggable={true}
-                        />
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-        </DragDropContext>
+        {/* All-Day Tasks (Draggable) - only in inbox view */}
+        {currentView === 'inbox' && (
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="all-day-tasks">
+              {(provided) => (
+                <div {...provided.droppableProps} ref={provided.innerRef}>
+                  {allDayTasks.map((task, index) => (
+                    <Draggable key={task.id} draggableId={task.id} index={index}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          className={`${snapshot.isDragging ? 'opacity-75' : ''}`}
+                        >
+                          <TaskCard 
+                            task={task} 
+                            onToggle={handleToggleTask}
+                            isDraggable={true}
+                          />
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
+        )}
 
         {todoTasks.length === 0 && (
           <div className="text-center py-8 text-gray-500">
             <Circle size={48} className="mx-auto mb-4 text-gray-300" />
-            <p>No tasks yet. Add one to get started!</p>
+            <p>
+              {currentView === 'inbox' 
+                ? 'No unscheduled tasks yet!'
+                : 'No tasks for this date. Add one to get started!'
+              }
+            </p>
           </div>
         )}
       </div>
