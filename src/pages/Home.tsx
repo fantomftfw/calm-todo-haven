@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Clock, Calendar, CheckCircle, Circle } from 'lucide-react';
@@ -34,7 +33,9 @@ const Home = () => {
   const loadTasks = async () => {
     try {
       const data = await getTasks();
-      setTasks(data.tasks || []);
+      // API returns tasks directly as an array, not nested under 'tasks' property
+      setTasks(data || []);
+      console.log('Loaded tasks:', data);
     } catch (error) {
       console.error('Failed to load tasks:', error);
       toast({
