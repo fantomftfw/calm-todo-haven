@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Clock, Calendar, CheckCircle, Circle } from 'lucide-react';
@@ -6,6 +7,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import TaskCard from '../components/TaskCard';
 import AddTaskModal from '../components/AddTaskModal';
+import DateHeader from '../components/DateHeader';
+import WeekView from '../components/WeekView';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 interface Task {
@@ -23,6 +26,8 @@ const Home = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showWeekView, setShowWeekView] = useState(false);
   const { user } = useAuth();
   const { getTasks, toggleTask, reorderTasks } = useTasks();
 
@@ -71,7 +76,7 @@ const Home = () => {
   const onDragEnd = async (result: any) => {
     if (!result.destination) return;
 
-    const todoTasks = tasks.filter(task => !task.isDone);
+    const todoTasks = getFilteredTasks().filter(task => !task.isDone);
     const allDayTasks = todoTasks.filter(task => !task.date && !task.time);
     
     const reorderedTasks = Array.from(allDayTasks);
@@ -91,8 +96,37 @@ const Home = () => {
     }
   };
 
-  const todoTasks = tasks.filter(task => !task.isDone);
-  const doneTasks = tasks.filter(task => task.isDone);
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+    setShowWeekView(false);
+  };
+
+  const handleWeekChange = (direction: 'prev' | 'next') => {
+    const newDate = new Date(selectedDate);
+    if (direction === 'prev') {
+      newDate.setDate(newDate.getDate() - 7);
+    } else {
+      newDate.setDate(newDate.getDate() + 7);
+    }
+    setSelectedDate(newDate);
+  };
+
+  const isSelectedDate = (taskDate: string) => {
+    if (!taskDate) return false;
+    const task = new Date(taskDate);
+    return task.toDateString() === selectedDate.toDateString();
+  };
+
+  const getFilteredTasks = () => {
+    return tasks.filter(task => {
+      // Show tasks without dates (all-day tasks) or tasks for the selected date
+      return !task.date || isSelectedDate(task.date);
+    });
+  };
+
+  const filteredTasks = getFilteredTasks();
+  const todoTasks = filteredTasks.filter(task => !task.isDone);
+  const doneTasks = filteredTasks.filter(task => task.isDone);
   const scheduledTasks = todoTasks.filter(task => task.date || task.time);
   const allDayTasks = todoTasks.filter(task => !task.date && !task.time);
 
@@ -116,6 +150,22 @@ const Home = () => {
         </h1>
         <p className="text-gray-600">Let's make today productive</p>
       </div>
+
+      {/* Date Header */}
+      <DateHeader 
+        selectedDate={selectedDate}
+        isExpanded={showWeekView}
+        onToggle={() => setShowWeekView(!showWeekView)}
+      />
+
+      {/* Week View */}
+      {showWeekView && (
+        <WeekView
+          selectedDate={selectedDate}
+          onDateSelect={handleDateSelect}
+          onWeekChange={handleWeekChange}
+        />
+      )}
 
       {/* To Do Section */}
       <div className="mb-8">
