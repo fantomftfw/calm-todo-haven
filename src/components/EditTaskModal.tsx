@@ -51,12 +51,12 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, task, on
 
     setLoading(true);
     try {
-      // Format the data to match API expectations - send empty strings instead of null
+      // Format the data to match API expectations - send null for empty date/time fields
       const updateData = {
         title: formData.title.trim(),
-        description: formData.description.trim(),
-        date: formData.date,
-        time: formData.time,
+        description: formData.description.trim() || '',
+        date: formData.date || null,
+        time: formData.time || null,
         hasDate: Boolean(formData.date),
         hasTime: Boolean(formData.time),
         totalEstimatedTime: formData.totalEstimatedTime || 0,
