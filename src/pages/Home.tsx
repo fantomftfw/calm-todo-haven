@@ -1,12 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Clock, Calendar, CheckCircle, Circle } from 'lucide-react';
+import { Plus, Clock, Calendar, CheckCircle, Circle, Mic } from 'lucide-react';
 import { useTasks } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import TaskCard from '../components/TaskCard';
 import AddTaskModal from '../components/AddTaskModal';
+import VoiceAssistantModal from '../components/VoiceAssistantModal';
 import DateHeader from '../components/DateHeader';
 import WeekView from '../components/WeekView';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -26,6 +26,7 @@ const Home = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showWeekView, setShowWeekView] = useState(false);
   const { user } = useAuth();
@@ -237,19 +238,36 @@ const Home = () => {
         </div>
       )}
 
-      {/* Floating Add Button */}
-      <button
-        onClick={() => setShowAddModal(true)}
-        className="fixed bottom-24 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center"
-      >
-        <Plus size={24} />
-      </button>
+      {/* Floating Action Buttons */}
+      <div className="fixed bottom-24 right-6 flex flex-col space-y-3">
+        {/* Voice Assistant Button */}
+        <button
+          onClick={() => setShowVoiceModal(true)}
+          className="w-14 h-14 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center"
+        >
+          <Mic size={24} />
+        </button>
+        
+        {/* Add Task Button */}
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center"
+        >
+          <Plus size={24} />
+        </button>
+      </div>
 
-      {/* Add Task Modal */}
+      {/* Modals */}
       <AddTaskModal 
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onTaskAdded={loadTasks}
+      />
+
+      <VoiceAssistantModal
+        isOpen={showVoiceModal}
+        onClose={() => setShowVoiceModal(false)}
+        onTasksCreated={loadTasks}
       />
     </div>
   );

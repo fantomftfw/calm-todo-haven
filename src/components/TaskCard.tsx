@@ -22,16 +22,15 @@ interface TaskCardProps {
 
 const TaskCard: React.FC<TaskCardProps> = ({ task, onToggle, isDraggable = false }) => {
   const [showConfetti, setShowConfetti] = useState(false);
-  const [wasCompleted, setWasCompleted] = useState(task.isDone);
 
   useEffect(() => {
     // Show confetti when task is newly completed
-    if (task.isDone && !wasCompleted) {
+    if (task.isDone) {
       setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 3000);
+      const timer = setTimeout(() => setShowConfetti(false), 3000);
+      return () => clearTimeout(timer);
     }
-    setWasCompleted(task.isDone);
-  }, [task.isDone, wasCompleted]);
+  }, [task.isDone]);
 
   const handleToggle = () => {
     onToggle(task.id);

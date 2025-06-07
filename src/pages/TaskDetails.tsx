@@ -25,7 +25,6 @@ const TaskDetails = () => {
   const [breakdownLoading, setBreakdownLoading] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [wasCompleted, setWasCompleted] = useState(false);
   const { getTask, toggleTask, deleteTask, breakdownTask } = useTasks();
 
   useEffect(() => {
@@ -36,14 +35,12 @@ const TaskDetails = () => {
 
   useEffect(() => {
     // Show confetti when task is newly completed
-    if (task && task.isDone && !wasCompleted) {
+    if (task?.isDone) {
       setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 3000);
+      const timer = setTimeout(() => setShowConfetti(false), 3000);
+      return () => clearTimeout(timer);
     }
-    if (task) {
-      setWasCompleted(task.isDone);
-    }
-  }, [task?.isDone, wasCompleted]);
+  }, [task?.isDone]);
 
   const loadTask = async () => {
     if (!id) return;
